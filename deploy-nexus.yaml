@@ -1,0 +1,76 @@
+---
+- name: Install java and net-tools
+  hosts: nexus
+  become: true
+  tasks:
+    - name: Update apt repository cache
+      apt:
+        update_cache: yes
+
+    - name: Install Java
+      package:
+        name: java-11-openjdk
+        state: present
+
+    - name: Install net-tools
+      package:
+        name: net-tools
+        state: present
+    
+- name: Download and install Nexus Repository Manager
+  hosts: nexus
+  become: true
+  tasks:
+    - name: Download Nexus Repository Manager
+      get_url:
+        url: https://download.sonatype.com/nexus/3/latest-unix.tar.gz
+        dest: /opt/nexus-latest.tar.gz
+
+    - name: Extract Nexus Repository Manager
+      unarchive:
+        src: /opt/nexus-latest.tar.gz
+        dest: /opt/
+        remote_src: yes
+
+    - name: Rename extracted directory to nexus
+      command: mv /opt/nexus-* /opt/nexus
+
+    - name: Create nexus user and group
+      user:
+        name: nexus
+        group: nexus
+        create_home: no
+        shell: /bin/false
+
+    - name: Change ownership of nexus directory
+      file:     
+        path: /opt/nexus  
+        owner: nexus
+        group: nexus
+        state: directory
+        recursive: yes
+    
+    - name: Change ownership of sonatype-work directory
+      file: 
+        path: /opt/sonatype-work
+        owner: nexus
+        group: nexus
+        state: directory
+        recursive: yes
+    
+
+- name: Configure Nexus Repository Manager to run as nexus user
+  hosts: nexus
+  become: true
+  tasks:
+    - name: Update nexus.rc to run as nexus user
+      lineinfile:
+        path: /opt/nexus/bin/nexus.rc
+        regexp: '^#run_as_user='
+        line: 'run_as_user=nexus'
+    - name: Start Nexus Repository Manager
+      command: /opt/nexus/bin/nexus start
+      become_user: nexus
+    - name: Enable Nexus Repository Manager to start on boot
+      command: /opt/nexus/bin/nexus enable
+      become_user: nexus
