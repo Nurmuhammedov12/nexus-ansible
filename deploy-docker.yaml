@@ -43,10 +43,12 @@
         name: root
         groups: docker
         append: yes
+
     - name: Ensure Docker is running
       command: docker info
       register: docker_info
       failed_when: docker_info.rc != 0
+      
     - name: Reconnect to the host after adding to docker group
       meta: reset_connection
 
