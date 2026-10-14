@@ -58,7 +58,6 @@
         state: directory
         recursive: yes
     
-
 - name: Configure Nexus Repository Manager to run as nexus user
   hosts: nexus
   become: true
